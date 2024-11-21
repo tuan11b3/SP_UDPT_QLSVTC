@@ -1,44 +1,34 @@
 USE [QLSVTC]
 GO
-
-/****** Object:  StoredProcedure [dbo].[SP_REPORT_DS_SINHVIEN_DANGKY]    Script Date: 11/16/2024 3:14:36 PM ******/
+/****** Object:  StoredProcedure [dbo].[SP_REPORT_DS_SINHVIEN_DANGKY]    Script Date: 11/21/2024 1:07:50 PM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
-
-CREATE PROCEDURE [dbo].[SP_REPORT_DS_SINHVIEN_DANGKY]
-    @NienKhoa INT,         -- Niên khóa
-    @HocKy INT,            -- Học kỳ
-    @MaMH NCHAR(10),       -- Mã môn học
-    @Nhom INT              -- Nhóm lớp tín chỉ
+ALTER PROCEDURE [dbo].[SP_REPORT_DS_SINHVIEN_DANGKY]
+    @NIENKHOA INT,         -- Niên khóa
+    @HOCKY INT,            -- Học kỳ
+    @MAMH NCHAR(10),       -- Mã môn học
+    @NHOM INT              -- Nhóm lớp tín chỉ
 AS
 BEGIN
+	DECLARE @MALTC INT, @MANKHK INT
+	SELECT @MANKHK = MANKHK FROM NKHK WHERE NAMHOC = @NIENKHOA AND HK = @HOCKY
+	SELECT @MALTC = MALTC FROM LOPTINCHI WHERE MANKHK = @MANKHK AND MAMH = @MAMH AND NHOM = @NHOM
     -- Kết quả trả về danh sách sinh viên đăng ký lớp tín chỉ
     SELECT 
-        SINHVIEN.MASV,                    -- Mã sinh viên
-        SINHVIEN.HO,                      -- Họ sinh viên
-        SINHVIEN.TEN,                     -- Tên sinh viên
-        CASE WHEN SINHVIEN.PHAI = 1 THEN N'Nam' ELSE N'Nữ' END AS PHAI, -- Phái
-        SINHVIEN.MALOP                    -- Mã lớp
+        SV.MASV,                    -- Mã sinh viên
+        SV.HO,                      -- Họ sinh viên
+        SV.TEN,                     -- Tên sinh viên
+        CASE WHEN SV.PHAI = 1 THEN N'Nam' ELSE N'Nữ' END AS PHAI, -- Phái
+        SV.MALOP                    -- Mã lớp
     FROM 
-        SINHVIEN
-    INNER JOIN 
-        DANGKY ON SINHVIEN.MASV = DANGKY.MASV
-    INNER JOIN 
-        LOPTINCHI ON DANGKY.MALTC = LOPTINCHI.MALTC
-    INNER JOIN 
-        NKHK ON LOPTINCHI.MANKHK = NKHK.MANKHK
+        SINHVIEN AS SV,
+		DANGKY AS DK
     WHERE 
-        NKHK.NAMHOC = @NienKhoa            -- Lọc theo niên khóa
-        AND NKHK.HK = @HocKy               -- Lọc theo học kỳ
-        AND LOPTINCHI.MAMH = @MaMH         -- Lọc theo môn học
-        AND LOPTINCHI.NHOM = @Nhom         -- Lọc theo nhóm lớp tín chỉ
-        AND LOPTINCHI.HUYLOP = 0           -- Chỉ lấy lớp chưa bị hủy
+        DK.MALTC = @MALTC 
+		AND SV.MASV = DK.MASV                         
     ORDER BY 
-        SINHVIEN.TEN, SINHVIEN.HO;         -- Sắp xếp theo tên và họ tăng dần
+        SV.TEN, SV.HO;         -- Sắp xếp theo tên và họ tăng dần
 END
-
-GO
 

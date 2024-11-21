@@ -1,52 +1,43 @@
 USE [QLSVTC]
 GO
-
-/****** Object:  StoredProcedure [dbo].[SP_REPORT_DS_LOPTINCHI]    Script Date: 11/16/2024 3:14:08 PM ******/
+/****** Object:  StoredProcedure [dbo].[SP_REPORT_DS_LOPTINCHI]    Script Date: 11/21/2024 1:07:24 PM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
-
-CREATE PROCEDURE [dbo].[SP_REPORT_DS_LOPTINCHI]
-    @NienKhoa INT,      -- Niên khóa
-    @HocKy INT          -- Học kỳ
+ALTER PROCEDURE [dbo].[SP_REPORT_DS_LOPTINCHI]
+    @NIENKHOA INT,      -- Niên khóa
+    @HOCKY INT          -- Học kỳ
 AS
 BEGIN
-    -- Kết quả trả về thông tin chi tiết về lớp tín chỉ
+    DECLARE @MANKHK INT
+    SELECT @MANKHK = MANKHK FROM NKHK WHERE NAMHOC = @NIENKHOA AND HK = @HOCKY 
+
     SELECT 
         MONHOC.TENMONHOC AS TENMH,                  -- Tên môn học
-        LOPTINCHI.NHOM,                            -- Nhóm
+        FilteredLOPTINCHI.NHOM,                    -- Nhóm
         GIANGVIEN.HO + ' ' + GIANGVIEN.TEN AS GV,  -- Họ và tên giảng viên
-        LOPTINCHI.SOSVTOITHIEU,                    -- Số sinh viên tối thiểu
+        FilteredLOPTINCHI.SOSVTOITHIEU,            -- Số sinh viên tối thiểu
         COUNT(DANGKY.MASV) AS SOSVDANGKY           -- Số sinh viên đăng ký
     FROM 
-        LOPTINCHI
+        (SELECT * 
+         FROM LOPTINCHI 
+         WHERE MANKHK = @MANKHK AND HUYLOP = 0) AS FilteredLOPTINCHI
     INNER JOIN 
-        MONHOC ON LOPTINCHI.MAMH = MONHOC.MAMH
+        MONHOC ON FilteredLOPTINCHI.MAMH = MONHOC.MAMH
     INNER JOIN 
-        GIANGDAY ON LOPTINCHI.MALTC = GIANGDAY.MALTC
+        GIANGDAY ON FilteredLOPTINCHI.MALTC = GIANGDAY.MALTC
     INNER JOIN 
         GIANGVIEN ON GIANGDAY.MAGV = GIANGVIEN.MAGV
-    INNER JOIN 
-        NKHK ON LOPTINCHI.MANKHK = NKHK.MANKHK
     LEFT JOIN 
-        DANGKY ON LOPTINCHI.MALTC = DANGKY.MALTC
-    WHERE 
-        NKHK.NAMHOC = @NienKhoa
-        AND NKHK.HK = @HocKy
-        AND LOPTINCHI.MAKHOA = 'CNTT'  -- Dữ liệu chỉ của khoa CNTT
-        AND LOPTINCHI.HUYLOP = 0       -- Lớp chưa bị hủy
+        DANGKY ON FilteredLOPTINCHI.MALTC = DANGKY.MALTC
     GROUP BY 
         MONHOC.TENMONHOC,
-        LOPTINCHI.NHOM,
+        FilteredLOPTINCHI.NHOM,
         GIANGVIEN.HO,
         GIANGVIEN.TEN,
-        LOPTINCHI.SOSVTOITHIEU
+        FilteredLOPTINCHI.SOSVTOITHIEU
     ORDER BY 
         MONHOC.TENMONHOC, 
-        LOPTINCHI.NHOM;
+        FilteredLOPTINCHI.NHOM;
 END
-
-GO
-
