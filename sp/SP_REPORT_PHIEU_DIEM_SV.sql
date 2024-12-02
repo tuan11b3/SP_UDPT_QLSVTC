@@ -1,6 +1,6 @@
 USE [QLSVTC]
 GO
-/****** Object:  StoredProcedure [dbo].[SP_REPORT_PHIEU_DIEM_SV]    Script Date: 11/21/2024 1:08:11 PM ******/
+/****** Object:  StoredProcedure [dbo].[SP_REPORT_PHIEU_DIEM_SV]    Script Date: 12/2/2024 10:19:09 AM ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
@@ -18,7 +18,7 @@ BEGIN
         FilteredDANGKY.DIEM_GK * 0.3 + 
         FilteredDANGKY.DIEM_CK * 0.6) AS DIEM_HET_MON -- Điểm hết môn
     FROM 
-        (SELECT MALTC, DIEM_CC, DIEM_GK, DIEM_CK FROM DANGKY WHERE MASV = @MASV) AS FilteredDANGKY          
+        (SELECT MALTC, DIEM_CC, DIEM_GK, DIEM_CK FROM DANGKY WHERE MASV = @MASV AND HUYDANGKY=0) AS FilteredDANGKY          
     INNER JOIN 
         LOPTINCHI ON FilteredDANGKY.MALTC = LOPTINCHI.MALTC         -- Liên kết lớp tín chỉ
     INNER JOIN 

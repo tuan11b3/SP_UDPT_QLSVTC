@@ -1,0 +1,31 @@
+USE [QLSVTC]
+GO
+
+/****** Object:  StoredProcedure [dbo].[SP_REPORT_DIEMTONGKET_2]    Script Date: 12/2/2024 10:17:00 AM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SP_REPORT_DIEMTONGKET_2]
+	@MALOP NCHAR(10)
+AS
+BEGIN
+	IF NOT EXISTS(SELECT 1 FROM dbo.LOP WHERE MALOP = @MALOP)
+		RAISERROR(N'Mã lớp không tồn tại!', 16, 1)
+	ELSE
+	BEGIN
+		SELECT sv.MASV + ' - ' +sv.HO + ' ' +sv.TEN, mh.TENMONHOC,
+        MAX(dk.DIEM_CC * 0.1 + dk.DIEM_GK * 0.3 + dk.DIEM_CK * 0.6) AS [Điểm Sinh Viên]
+
+		FROM (SELECT MASV, HO, TEN FROM dbo.SINHVIEN WHERE MALOP = @MALOP) AS sv
+		JOIN dbo.DANGKY dk ON sv.MASV = dk.MASV AND dk.HUYDANGKY = 0
+		JOIN dbo.LOPTINCHI ltc ON dk.MALTC = ltc.MALTC
+		JOIN dbo.MONHOC mh ON ltc.MAMH = mh.MAMH
+		GROUP BY sv.MASV, mh.TENMONHOC, sv.HO, sv.TEN
+		ORDER BY sv.TEN, sv.HO, mh.TENMONHOC
+	END
+END
+GO
+
