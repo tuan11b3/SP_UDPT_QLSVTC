@@ -1,0 +1,54 @@
+USE [QLSVTC]
+GO
+
+/****** Object:  StoredProcedure [dbo].[SP_DS_LOPTINCHI_SVDK]    Script Date: 12/11/2024 7:54:26 PM ******/
+SET ANSI_NULLS ON
+GO
+
+SET QUOTED_IDENTIFIER ON
+GO
+
+CREATE PROCEDURE [dbo].[SP_DS_LOPTINCHI_SVDK]
+	@MASV NCHAR(10)
+AS
+DECLARE @ngayht DATE = CAST(GETDATE() AS DATE)
+DECLARE @ngaymodk DATE
+DECLARE @ngaydodk DATE
+DECLARE @mankhk INT = NULL;
+SET XACT_ABORT ON;
+BEGIN
+	SELECT @mankhk=MANKHK FROM NKHK WHERE NGAYMODK <= @ngayht AND @ngayht < NGAYDONGDK;
+	IF @mankhk IS NULL
+	BEGIN
+		RAISERROR(N'Ngoài thời gian đăng ký!', 16, 1)
+		RETURN
+	END
+
+	SELECT  FilteredLTC.MALTC,
+			mh.MAMH,
+			mh.TENMONHOC,
+			FilteredLTC.NHOM,
+			STUFF((
+				SELECT '<br>' + N'thứ: ' + CAST(tb.THU AS NVARCHAR)+ ' -----> ' + N'buổi: ' + CAST(tb.BUOI AS NVARCHAR)
+				FROM THUBUOI tb
+				INNER JOIN GIANGDAY gd ON tb.MATHUBUOI = gd.MATB
+				WHERE gd.MALTC = FilteredLTC.MALTC
+				FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 4, '') AS 'Thời khóa biểu'
+	FROM (SELECT MALTC, NHOM, MAMH FROM LOPTINCHI WHERE MANKHK = @mankhk AND HUYLOP = 0) AS FilteredLTC
+	INNER JOIN 
+		MONHOC mh ON FilteredLTC.MAMH = mh.MAMH
+	INNER JOIN 
+		DANGKY dk ON FilteredLTC.MALTC = dk.MALTC AND dk.MASV=@MASV AND dk.HUYDANGKY=0
+	INNER JOIN
+		SINHVIEN sv ON dk.MASV = sv.MASV AND sv.DANGHIHOC=0
+	GROUP BY  
+		FilteredLTC.MALTC,
+		FilteredLTC.NHOM,
+		mh.MAMH,
+		mh.TENMONHOC
+	ORDER BY
+		mh.TENMONHOC,
+		FilteredLTC.NHOM;
+END
+GO
+
