@@ -1,14 +1,11 @@
 USE [QLSVTC]
 GO
-
-/****** Object:  StoredProcedure [dbo].[SP_DS_LOPTINCHI_MODK]    Script Date: 12/11/2024 7:54:49 PM ******/
+/****** Object:  StoredProcedure [dbo].[SP_DS_LOPTINCHI_MODK]    Script Date: 12/14/2024 10:36:08 AM ******/
 SET ANSI_NULLS ON
 GO
-
 SET QUOTED_IDENTIFIER ON
 GO
-
-CREATE PROCEDURE [dbo].[SP_DS_LOPTINCHI_MODK]
+ALTER PROCEDURE [dbo].[SP_DS_LOPTINCHI_MODK]
 AS
 DECLARE @ngayht DATE = CAST(GETDATE() AS DATE)
 DECLARE @ngaymodk DATE
@@ -26,13 +23,19 @@ BEGIN
 			mh.MAMH,
 			mh.TENMONHOC,
 			FilteredLTC.NHOM,
-			GV = STUFF(								-- Họ và tên giảng viên
-			(SELECT ', ' + gv.HO + ' ' + gv.TEN 
-			 FROM GIANGVIEN gv 
+			STUFF(
+			(SELECT '<br>' + gv.HO + ' ' + gv.TEN
+			 FROM GIANGVIEN gv
 			 INNER JOIN GIANGDAY gd ON gv.MAGV = gd.MAGV
 			 WHERE gd.MALTC = FilteredLTC.MALTC
-			 FOR XML PATH('')), 1, 1, ''), 
-			COUNT(dk.MASV) AS sosvdk
+			 FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 4, '') AS 'HOTENGV',
+			COUNT(dk.MASV) AS sosvdk,
+			STUFF((
+				SELECT '<br>' + N'thứ: ' + CAST(tb.THU AS NVARCHAR)+ ' -----> ' + N'buổi: ' + CAST(tb.BUOI AS NVARCHAR)
+				FROM THUBUOI tb
+				INNER JOIN GIANGDAY gd ON tb.MATHUBUOI = gd.MATB
+				WHERE gd.MALTC = FilteredLTC.MALTC
+				FOR XML PATH(''), TYPE).value('.', 'NVARCHAR(MAX)'), 1, 4, '') AS 'THOIKHOABIEU'
 	FROM (SELECT MALTC, NHOM, MAMH FROM LOPTINCHI WHERE MANKHK = @mankhk AND HUYLOP = 0) AS FilteredLTC
 	INNER JOIN MONHOC mh ON FilteredLTC.MAMH = mh.MAMH
 	LEFT JOIN DANGKY dk ON FilteredLTC.MALTC = dk.MALTC AND dk.HUYDANGKY=0
@@ -43,5 +46,3 @@ BEGIN
 	ORDER BY  mh.TENMONHOC,
 			  FilteredLTC.NHOM;
 END
-GO
-
